@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The controller keyboard: an on-screen keyboard across the bottom of the
-// screen, for search and launch arguments, typed with the pad or by touch.
-// Its keys, cursor and text are PlayportKit.PadKeyboard; this file draws
-// them and maps the buttons:
+// screen, for search, sign-in and launch arguments, typed with the pad or by
+// touch. Its keys, cursor and text are PlayportKit.PadKeyboard; this file
+// draws them and maps the buttons:
 //
 //   D-pad   move between keys (sideways wraps)     A   type the key
 //   B       delete (close when there is nothing)   X   space
-//   Y       Shift                                   LB/RB  move the caret
-//   ≡       Done
+//   Y       Shift                                  LB/RB  move the caret
+//   ⊙       Paste                                  ≡   Done
 //
 // Every close keeps the text: the modal's `done` gets it. A password's
 // keyboard draws dots and keeps its text out of the driver's log
@@ -54,9 +54,20 @@ final class PadKeyboardSession: ObservableObject {
         case .y: key(.shift)
         case .lb: state.moveCaret(by: -1)
         case .rb: state.moveCaret(by: 1)
+        case .view: paste()
         case .menu: finish()
-        case .view, .lt, .rt: break
+        case .lt, .rt: break
         }
+    }
+
+    /// The clipboard's text at the caret (issue #165). Only ASCII goes in:
+    /// Steam's password may hold any printable ASCII, and a non-ASCII paste in
+    /// a password field would fail there with no reason shown.
+    func paste() {
+        guard let s = UIPasteboard.general.string, !s.isEmpty,
+              s.allSatisfy({ $0.isASCII }) else { return }
+        for c in s { state.insert(c) }
+        report()
     }
 
     /// A key pressed, with A or by a tap.
@@ -97,6 +108,7 @@ final class PadKeyboardSession: ObservableObject {
         case .symbols: "?123"
         case .backspace: "⌫"
         case .space: "space"
+        case .paste: "Paste"
         case .done: "Done"
         }
     }
@@ -216,6 +228,7 @@ struct PadKeyboardView: View {
             PadModalHint(button: .b, label: session.state.text.isEmpty ? "Close" : "Delete") { session.press(.b) }
             PadModalHint(button: .x, label: "Space") { session.press(.x) }
             PadModalHint(button: .y, label: "Shift") { session.press(.y) }
+            PadModalHint(button: .view, label: "Paste") { session.paste() }
             PadModalHint(button: .menu, label: "Done") { session.press(.menu) }
         }
         .padding(.horizontal, 20)
