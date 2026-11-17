@@ -254,7 +254,7 @@ private struct GameDetailPage: View {
                         case .controller: EmptyView()
                         }
                     }
-                    .frame(width: 410)
+                    .frame(width: AppShell.gamePanelWidth)
                     .frame(maxHeight: .infinity, alignment: .top)
                     .background(PP.surface.ignoresSafeArea(edges: [.top, .trailing, .bottom]))
                     .overlay(alignment: .leading) { Rectangle().fill(PP.line).frame(width: 1).ignoresSafeArea(edges: [.top, .bottom]) }

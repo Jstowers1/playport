@@ -26,11 +26,14 @@
 	<string>Playport</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- The app delegate narrows these per launch: landscape for a title, portrait otherwise. -->
+	<!-- The app delegate narrows these per launch: landscape for a title, portrait
+	     otherwise; portrait works on the Duo in every pose (Back swing folded). -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<!-- iOS Game Mode (Metal HUD "Game Mode"): the system engages it for an app in the games category. -->
 	<key>LSApplicationCategoryType</key>

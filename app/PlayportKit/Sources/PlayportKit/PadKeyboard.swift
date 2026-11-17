@@ -6,9 +6,8 @@
 //
 // Three layers share one shape (five rows, ten units wide), so the key the
 // cursor is on stays put when Shift or ?123 switches layers: lower case,
-// upper case (one letter, then back to lower case) and symbols. Shift raises
-// the digits to !@#$%^&*(), and every layer has `-` (a backtick with Shift),
-// space and `.` at the bottom.
+// upper case (one letter, then back to lower case) and symbols. Every layer
+// has the digits on top, and `-` (a backtick with Shift), space and `.` at the bottom.
 
 import Foundation
 
@@ -18,9 +17,6 @@ public enum PadKey: Hashable, Sendable {
     case symbols
     case backspace
     case space
-    /// The clipboard's text in (issue #165: no way to enter a password with a
-    /// symbol before it). UIKit puts the string on `UIPasteboard.general`.
-    case paste
     case done
 }
 
@@ -65,11 +61,11 @@ public struct PadKeyboard: Equatable, Sendable {
     /// The rows of `layer`, top to bottom.
     public static func layout(_ layer: Layer) -> [[Cell]] {
         func chars(_ cs: [Character]) -> [Cell] { cs.map { Cell(key: .char($0), width: 1) } }
-        // Shift raises the digits to !@#$%^&*(), turns ' into ~ and - into `,
-        // so every printable ASCII character (a password's) is on some layer.
+        // Shift turns ' into ~ and - into `, so every printable ASCII character
+        // (a password's) is on some layer.
         let rows: [[Character]] = switch layer {
         case .lower: [digits] + letters
-        case .upper: [Array("!@#$%^&*()")] + letters.map { $0.map { $0 == "'" ? "~" : Character($0.uppercased()) } }
+        case .upper: [digits] + letters.map { $0.map { $0 == "'" ? "~" : Character($0.uppercased()) } }
         case .symbols: [digits] + signs
         }
         return [
@@ -78,7 +74,7 @@ public struct PadKeyboard: Equatable, Sendable {
             chars(rows[2]),
             [Cell(key: .shift, width: 1.5)] + chars(rows[3]) + [Cell(key: .backspace, width: 1.5)],
             [Cell(key: .symbols, width: 1.5), Cell(key: .char(layer == .upper ? "`" : "-"), width: 1), Cell(key: .space, width: 4.5),
-             Cell(key: .char("."), width: 1), Cell(key: .paste, width: 1), Cell(key: .done, width: 1)],
+             Cell(key: .char("."), width: 1), Cell(key: .done, width: 2)],
         ]
     }
 
@@ -147,7 +143,6 @@ public struct PadKeyboard: Equatable, Sendable {
         case .backspace: backspace()
         case .shift: layer = layer == .lower ? .upper : .lower
         case .symbols: layer = layer == .symbols ? .lower : .symbols
-        case .paste: return .edited   // the view pastes (PlayportKit cannot use UIKit)
         case .done: return .done
         }
         return .edited

@@ -90,6 +90,13 @@ public enum TouchKeyboard {
          Key("left", "◀", 0x50), Key("down", "▼", 0x51), Key("up", "▲", 0x52), Key("right", "▶", 0x4F)],
     ]
 
+    /// The scale for `height` (a safe area's height): 1, or a fold's half
+    /// screen's (the Duo folded), where the six rows at full height leave no
+    /// room for the game above. Every key and gap scales by it.
+    public static func scale(forHeight height: Double) -> Double {
+        min(1, height / Self.panelHeight)
+    }
+
     private static func letters(_ s: String) -> [Key] {
         s.map { c in Key(c.lowercased(), String(c), 0x04 + Int(c.asciiValue! - 65)) }
     }
@@ -100,8 +107,13 @@ public enum TouchKeyboard {
         if let i = m.firstIndex(where: { $0.name == name }) { m[i].ids.insert(k.id) } else { m.append((name, [k.id])) }
     }
 
-    /// The keyboard in `area` (the safe area): the panel across its bottom.
+    /// The keyboard in `area` (the safe area): the panel across its bottom,
+    /// every row and gap scaled when `area` is too short for them at full
+    /// height (a fold's half screen, the Duo folded).
     public static func layout(in area: TouchRect) -> Layout {
+        let s = scale(forHeight: area.height)
+        let panelHeight = Self.panelHeight * s, rowHeights = rowHeights.map { $0 * s },
+            gap = Self.gap * s, padding = Self.padding * s
         let panel = TouchRect(x: area.x, y: area.y + area.height - panelHeight, width: area.width, height: panelHeight)
         let inner = panel.width - 2 * padding
         var keys: [PlacedKey] = []
@@ -126,6 +138,7 @@ public enum TouchKeyboard {
             }
             y += h + gap
         }
+        let closeHeight = Self.closeHeight * s, closeGap = Self.closeGap * s
         let close = TouchTarget(id: closeID, kind: .button(.playport(.keyboard), .hold),
                                 frame: TouchRect(x: panel.maxX - closeWidth, y: panel.y - closeGap - closeHeight,
                                                  width: closeWidth, height: closeHeight))

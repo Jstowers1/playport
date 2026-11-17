@@ -78,7 +78,7 @@ struct AppShell: View {
         .overlay(alignment: .bottomLeading) {
             // A picker over it draws its own there.
             if panelUp, !modal.isUp, !layoutEditor.isUp(.gameOptions) {
-                PadFooter(hints: hints, leading: true).frame(maxWidth: .infinity).padding(.trailing, 410)
+                PadFooter(hints: hints, leading: true).frame(maxWidth: .infinity).padding(.trailing, AppShell.gamePanelWidth)
                     .padding(.bottom, Self.footerBottom)
             }
         }
@@ -204,6 +204,16 @@ struct AppShell: View {
 
     /// The footer's distance from the screen's bottom edge, inside the home indicator's inset.
     static let footerBottom: CGFloat = 9
+
+    /// Game options' and achievements' panel width, and the width the footer
+    /// keeps clear of it: 410 fits a title's landscape half on a full screen.
+    /// On the Duo folded, where the screen half is squarish, it takes the
+    /// screen's smaller edge, so the panel and the page's name still fit.
+    static var gamePanelWidth: CGFloat {
+        min(410, UIScreen.main.bounds.width < UIScreen.main.bounds.height
+            ? UIScreen.main.bounds.width - 40
+            : UIScreen.main.bounds.height - 40)
+    }
 
     /// Game options or the achievements over a game page: the panel runs to the bottom.
     /// The Controller page covers the whole page instead, over the footer as every screen has it.

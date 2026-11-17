@@ -158,10 +158,12 @@ struct RootView: View {
     }
 }
 
-/// The whole app is landscape, a title (TitleScreen.swift) and the gamepad UI
-/// alike (UI/AppShell.swift), whichever way the phone is held; except while a
-/// store's sign-in page is up (UI/GOGAccount.swift), when portrait is allowed
-/// too: a password manager's AutoFill sheet draws only grey in a landscape-only app.
+/// The whole app rotates freely (the iPhone Duo: folded, its screen half is
+/// squarish, and a title's landscape frame does not fit it). A title
+/// (TitleScreen.swift) and the gamepad UI (UI/AppShell.swift) play landscape
+/// on a full screen, whichever way the phone is held; except while a store's
+/// sign-in page is up (UI/GOGAccount.swift), when portrait is allowed too: a
+/// password manager's AutoFill sheet draws only grey in a landscape-only app.
 final class AppDelegate: NSObject, UIApplicationDelegate {
     @MainActor static var allowsPortrait = false {
         didSet {
@@ -173,7 +175,21 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    /// A Duo folded (screen on one pane, or flat in its Back swing) reports a
+    /// near-square window: the screen half. Portrait then, so the D-pad, the
+    /// footer and the keyboard fit; a full screen is never near-square, so any
+    /// unfolded pose stays as it was. iOS re-asks this while a fold changes
+    /// the window's geometry, so no observer is needed.
+    @MainActor static var foldedPortrait: Bool {
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            let b = scene.screen.bounds
+            if min(b.width, b.height) * 4 >= max(b.width, b.height) * 3 { return true }
+        }
+        return false
+    }
+
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
-        MainActor.assumeIsolated { Self.allowsPortrait } ? .allButUpsideDown : .landscape
+        let portrait = MainActor.assumeIsolated { Self.allowsPortrait || Self.foldedPortrait }
+        return portrait ? .allButUpsideDown : .landscape
     }
 }
