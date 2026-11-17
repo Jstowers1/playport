@@ -181,6 +181,33 @@ final class TouchKeyboardTests: XCTestCase {
         XCTAssertEqual(TouchKeyboard.hint(["kb-alt": .locked, "kb-ctrl": .latched]),
                        "Ctrl stays down until the next key, Alt until you tap it again")
     }
+
+    /// A fold's half screen (the Duo folded: a safe area too short for the
+    /// six rows at full height): every row and gap scales, the keys still
+    /// tile the shorter panel, and a roomy area keeps the full-height board.
+    func testAShortAreaScalesTheBoardDown() {
+        let folded = TouchRect(x: 44, y: 0, width: 385, height: 160)
+        let s = TouchKeyboard.scale(forHeight: folded.height)
+        XCTAssertEqual(s, 160.0 / TouchKeyboard.panelHeight, accuracy: 0.001)
+        let l = TouchKeyboard.layout(in: folded)
+        XCTAssertEqual(l.panel.height, TouchKeyboard.panelHeight * s, accuracy: 0.001)
+        XCTAssertEqual(l.panel.maxY, folded.maxY, accuracy: 0.001)
+        for (r, row) in TouchKeyboard.rows.enumerated() {
+            for k in row {
+                let face = l.keys.first { $0.key.id == k.id }!.face
+                XCTAssertEqual(face.height, TouchKeyboard.rowHeights[r] * s, accuracy: 0.001, k.id)
+            }
+        }
+        let esc = l.keys.first { $0.key.id == "kb-esc" }!.target.frame
+        let f1 = l.keys.first { $0.key.id == "kb-f1" }!.target.frame
+        XCTAssertEqual(esc.maxX, f1.x, accuracy: 0.001)   // the row still tiles sideways
+        // A taller area than the board needs keeps the full-height layout.
+        XCTAssertEqual(TouchKeyboard.scale(forHeight: 300), 1, accuracy: 0.001)
+        let full = TouchKeyboard.layout(in: area)
+        XCTAssertEqual(full.panel.height, TouchKeyboard.panelHeight, accuracy: 0.001)
+        let again = TouchKeyboard.layout(in: area)
+        for (a, b) in zip(full.keys, again.keys) { XCTAssertEqual(a.face, b.face) }
+    }
 }
 
 /// The keyboard's keys through InputMixer, as HostIO sends them on to Lifecycle and winios_post_key.
@@ -238,29 +265,4 @@ final class TouchKeyboardMixerTests: XCTestCase {
         XCTAssertEqual(r.slot0, .unchanged)
     }
 
-    /// A fold's half screen (the Duo folded: a squarish safe area too short
-    /// for the six rows at full height): every row and gap scales, the keys
-    /// still tile the shorter panel, and 1 stays 1.
-    func testAShortAreaScalesTheBoardDown() {
-        let folded = TouchRect(x: 44, y: 0, width: 385, height: 300)
-        let s = TouchKeyboard.scale(forHeight: folded.height)
-        XCTAssertEqual(s, 300.0 / TouchKeyboard.panelHeight, accuracy: 0.001)
-        let l = TouchKeyboard.layout(in: folded)
-        XCTAssertEqual(l.panel.height, TouchKeyboard.panelHeight * s, accuracy: 0.001)
-        XCTAssertEqual(l.panel.maxY, folded.maxY, accuracy: 0.001)
-        for row in TouchKeyboard.rows {
-            for k in row {
-                let face = l.keys.first { $0.key.id == k.id }!.face
-                XCTAssertTrue(face.height <= TouchKeyboard.rowHeights[0] * s + 0.001, k.id)
-            }
-        }
-        let esc = l.keys.first { $0.key.id == "kb-esc" }!.target.frame
-        let f1 = l.keys.first { $0.key.id == "kb-f1" }!.target.frame
-        XCTAssertEqual(esc.maxX, f1.x, accuracy: 0.001)   // the row still tiles sideways
-        let full = TouchKeyboard.layout(in: area)
-        XCTAssertEqual(full.panel.height, TouchKeyboard.panelHeight, accuracy: 0.001)
-        for (a, b) in zip(full.keys, TouchKeyboard.layout(in: area).keys) {
-            XCTAssertEqual(a.face, b.face)
-        }
-    }
 }

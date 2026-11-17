@@ -169,15 +169,14 @@ struct PadKeyboardView: View {
         let rows = PadKeyboard.layout(s.layer)
         return GeometryReader { geo in
             let unit = min(Self.maxUnit, (geo.size.width - 9 * Self.gap) / 10)
-            let h = Self.keyHeight * scale
             VStack(spacing: Self.gap) {
                 ForEach(rows.indices, id: \.self) { r in
                     HStack(spacing: Self.gap) {
                         ForEach(rows[r].indices, id: \.self) { c in
                             let cell = rows[r][c]
                             key(cell.key, on: s.row == r && s.column == c, shifted: cell.key == .shift && s.layer == .upper
-                                || cell.key == .symbols && s.layer == .symbols, scale: scale)
-                                .frame(width: unit * cell.width + Self.gap * (cell.width - 1), height: h)
+                                || cell.key == .symbols && s.layer == .symbols)
+                                .frame(width: unit * cell.width + Self.gap * (cell.width - 1), height: Self.keyHeight)
                                 .onTapGesture { session.tap(row: r, column: c) }
                         }
                     }
@@ -185,26 +184,16 @@ struct PadKeyboardView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .frame(height: 5 * Self.keyHeight * scale + 4 * Self.gap)
+        .frame(height: 5 * Self.keyHeight + 4 * Self.gap)
         .padding(.horizontal, 20)
     }
 
-    /// The keys' height scale: 1 on a full screen; on a short one (the Duo
-    /// folded, its screen half squarish) it takes what is left of the screen's
-    /// height for the board, its field and its footer. Recomputed on every
-    /// pose change, as SwiftUI re-reads the view.
-    private var scale: CGFloat {
-        let board = 5 * Self.keyHeight + 4 * Self.gap + 28 + 14 + 36
-        return min(1, (UIScreen.main.bounds.height * 0.7) / board)
-    }
-
-    private func key(_ k: PadKey, on: Bool, shifted: Bool, scale: CGFloat) -> some View {
+    private func key(_ k: PadKey, on: Bool, shifted: Bool) -> some View {
         let special: Bool = if case .char = k { false } else { k != .space }
         let fill = k == .done ? PP.accent : shifted ? PP.text : special ? PP.line : PP.raised
         let ink = k == .done ? PP.onAccent : shifted ? PP.background : PP.text
-        let font = (special || k == .space ? 13 : 16) * min(1, scale * 1.6)
         return Text(PadKeyboardSession.label(k))
-            .font(.system(size: font, weight: special ? .semibold : .regular))
+            .font(.system(size: special || k == .space ? 13 : 16, weight: special ? .semibold : .regular))
             .foregroundStyle(ink)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(fill, in: RoundedRectangle(cornerRadius: 6))
